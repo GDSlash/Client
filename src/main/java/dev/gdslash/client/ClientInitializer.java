@@ -1,6 +1,8 @@
 package dev.gdslash.client;
 
 import dev.gdslash.client.config.ConfigManager;
+import dev.gdslash.client.hud.HudManager;
+import dev.gdslash.client.hud.widgets.WatermarkHudWidget;
 import dev.gdslash.client.input.KeybindManager;
 import dev.gdslash.client.module.ModuleRegistry;
 import net.fabricmc.api.ClientModInitializer;
@@ -19,11 +21,16 @@ public final class ClientInitializer implements ClientModInitializer {
     public static final ModuleRegistry MODULES = new ModuleRegistry();
     public static final ConfigManager CONFIG = new ConfigManager(MODULES);
     public static final KeybindManager KEYBINDS = new KeybindManager(MODULES);
+    public static final HudManager HUD = new HudManager();
 
     @Override
     public void onInitializeClient() {
         CONFIG.load();
         KEYBINDS.initialize();
+
+        HUD.register(new WatermarkHudWidget());
+        HUD.load();
+        HUD.initialize();
 
         boolean registered = ResourceLoader.registerBuiltinPack(
                 Identifier.fromNamespaceAndPath(MOD_ID, "client-default"),
