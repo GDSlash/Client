@@ -20,6 +20,7 @@ import java.util.Optional;
 public final class KeybindManager {
     private final ModuleRegistry modules;
     private final Map<String, KeyMapping> bindings = new LinkedHashMap<>();
+    private KeyMapping.Category category;
     private boolean initialized;
 
     public KeybindManager(ModuleRegistry modules) {
@@ -30,22 +31,10 @@ public final class KeybindManager {
         if (initialized) return;
         initialized = true;
 
-        KeyMapping.Category category = KeyMapping.Category.register(
+        category = KeyMapping.Category.register(
                 Identifier.fromNamespaceAndPath(ClientInitializer.MOD_ID, "modules")
         );
-
-        for (Module module : modules.all()) {
-            String translationKey = "key." + ClientInitializer.MOD_ID + ".module." + module.id();
-            KeyMapping binding = KeyBindingHelper.registerKeyBinding(
-                    new KeyMapping(
-                            translationKey,
-                            InputConstants.Type.KEYSYM,
-                            InputConstants.UNKNOWN.getValue(),
-                            category
-                    )
-            );
-            bindings.put(module.id(), binding);
-        }
+        modules.setRegistrationListener(this::register);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             for (Map.Entry<String, KeyMapping> entry : bindings.entrySet()) {
@@ -59,21 +48,31 @@ public final class KeybindManager {
         });
     }
 
+    private void register(Module module) {
+        if (bindings.containsKey(module.id())) return;
+
+        String translationKey = "key." + ClientInitializer.MOD_ID + ".module." + module.id();
+        KeyMapping binding = KeyBindingHelper.registerKeyBinding(
+                new KeyMapping(
+                        translationKey,
+                        InputConstants.Type.KEYSYM,
+                        InputConstants.UNKNOWN.getValue(),
+                        category
+                )
+        );
+        bindings.put(module.id(), binding);
+    }
+
     public Optional<KeyMapping> bindingFor(String moduleId) {
         return Optional.ofNullable(bindings.get(moduleId));
     }
 
-    /**
-     * Returns another module using the same non-empty key, if one exists.
-     * Minecraft also highlights conflicting mappings in its Controls screen.
-     */
+    /** Returns another module using this key, if one exists. */
     public Optional<Module> findConflict(String moduleId) {
         KeyMapping selected = bindings.get(moduleId);
-        if (selected == null) return Optional.empty();
+        if (selected == null || selected.isUnbound()) return Optional.empty();
 
         InputConstants.Key selectedKey = KeyBindingHelper.getBoundKeyOf(selected);
-        if (selected.isUnbound()) return Optional.empty();
-
         return bindings.entrySet().stream()
                 .filter(entry -> !entry.getKey().equals(moduleId))
                 .filter(entry -> KeyBindingHelper.getBoundKeyOf(entry.getValue()).equals(selectedKey))
