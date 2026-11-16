@@ -1,6 +1,7 @@
 package dev.gdslash.client;
 
 import dev.gdslash.client.config.ConfigManager;
+import dev.gdslash.client.input.KeybindManager;
 import dev.gdslash.client.module.ModuleRegistry;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
@@ -17,10 +18,12 @@ public final class ClientInitializer implements ClientModInitializer {
 
     public static final ModuleRegistry MODULES = new ModuleRegistry();
     public static final ConfigManager CONFIG = new ConfigManager(MODULES);
+    public static final KeybindManager KEYBINDS = new KeybindManager(MODULES);
 
     @Override
     public void onInitializeClient() {
         CONFIG.load();
+        KEYBINDS.initialize();
 
         boolean registered = ResourceLoader.registerBuiltinPack(
                 Identifier.fromNamespaceAndPath(MOD_ID, "client-default"),
