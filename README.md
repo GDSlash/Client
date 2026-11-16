@@ -12,18 +12,21 @@ Client is an actively developed Minecraft client project focused on a polished, 
 
 ## Project status
 
-**Early development.** The repository currently contains the Fabric project foundation and bundled resource-pack integration. It is not yet a feature-complete or release-ready client.
+**Early development.** The repository currently contains the Fabric project foundation, an initial module input/keybind system, and bundled resource-pack integration. It is not yet a feature-complete or release-ready client.
 
 ### Current foundation
 
 - Fabric client entrypoint for Minecraft 1.21.11.
 - Java 21 and official Mojang mappings.
 - Module categories, a module lifecycle, and a central module registry.
+- Native Minecraft key mappings for modules, grouped under a Client Modules category in Controls.
+- Module key presses toggle enabled state and save the configuration.
+- Keybind conflict lookup for future settings/GUI integration; Minecraft also marks conflicting keys in Controls.
 - Properties-based persistence for module enabled states.
 - Bundled **Client Default** resource pack, registered as enabled by default and still user-disableable.
 - GitHub Actions build workflow.
 
-The module registry is intentionally being built out incrementally. Input/keybind handling, HUD elements, gameplay modules, and the Dawn-inspired ClickGUI will be implemented in stages.
+Module key assignments are managed by Minecraft's Controls screen and persisted in the normal options file. Module bindings start unbound to avoid stealing vanilla controls. The registry notifies the input system when modules are added, so future modules receive a binding automatically.
 
 ## Requirements
 
@@ -52,6 +55,7 @@ gradle runClient
 | Path | Purpose |
 | --- | --- |
 | `src/main/java/dev/gdslash/client` | Fabric entrypoint and shared bootstrap |
+| `src/main/java/dev/gdslash/client/input` | Native module keybind registration and dispatch |
 | `src/main/java/dev/gdslash/client/module` | Module base class, categories, and registry |
 | `src/main/java/dev/gdslash/client/config` | Client configuration persistence |
 | `src/main/resources/resourcepacks/client-default` | Bundled resource pack |
@@ -65,8 +69,8 @@ The pack combines selected Vanilla Tweaks assets with **Motschen's Better Leaves
 
 ## Roadmap
 
-1. **Core systems:** finish module management, settings, configuration, and lifecycle infrastructure.
-2. **Input system:** keybinds, shortcuts, and reliable module toggling.
+1. **Core systems:** continue improving module settings, configuration, and lifecycle infrastructure.
+2. **Input system:** add module-specific bindings as gameplay modules are introduced, plus shortcut support and GUI-facing rebinding/conflict controls.
 3. **HUD framework:** draggable elements, positioning, scaling, and visibility.
 4. **Core HUD modules:** coordinates, FPS, keystrokes, armor status, and other useful overlays.
 5. **Gameplay modules:** PvP, movement, rendering, player, and quality-of-life features.
