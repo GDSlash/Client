@@ -12,7 +12,7 @@ Client is an actively developed Minecraft client project focused on a polished, 
 
 ## Project status
 
-**Early development.** The repository currently contains the Fabric project foundation, an initial module input/keybind system, and bundled resource-pack integration. It is not yet a feature-complete or release-ready client.
+**Early development.** The repository currently contains the Fabric project foundation, an initial module input/keybind system, a first HUD rendering/layout framework, and bundled resource-pack integration. It is not yet a feature-complete or release-ready client.
 
 ### Current foundation
 
@@ -23,10 +23,15 @@ Client is an actively developed Minecraft client project focused on a polished, 
 - Module key presses toggle enabled state and save the configuration.
 - Keybind conflict lookup for future settings/GUI integration; Minecraft also marks conflicting keys in Controls.
 - Properties-based persistence for module enabled states.
+- Reusable HUD widget base class and central HUD manager using Fabric's current HudElementRegistry API.
+- Four-corner anchoring, pixel offsets, per-widget scaling, visibility toggles, and persistent HUD layout settings.
+- Initial watermark widget to exercise the rendering pipeline.
 - Bundled **Client Default** resource pack, registered as enabled by default and still user-disableable.
 - GitHub Actions build workflow.
 
 Module key assignments are managed by Minecraft's Controls screen and persisted in the normal options file. Module bindings start unbound to avoid stealing vanilla controls. The registry notifies the input system when modules are added, so future modules receive a binding automatically.
+
+HUD layout settings are stored separately in `config/gdslash-client-hud.properties`. The initial framework supports corner anchoring and saved offsets/scaling; an in-game drag-and-drop editor is a follow-up step.
 
 ## Requirements
 
@@ -55,6 +60,8 @@ gradle runClient
 | Path | Purpose |
 | --- | --- |
 | `src/main/java/dev/gdslash/client` | Fabric entrypoint and shared bootstrap |
+| `src/main/java/dev/gdslash/client/hud` | HUD widget model, anchors, registry, and layout persistence |
+| `src/main/java/dev/gdslash/client/hud/widgets` | Built-in HUD widgets |
 | `src/main/java/dev/gdslash/client/input` | Native module keybind registration and dispatch |
 | `src/main/java/dev/gdslash/client/module` | Module base class, categories, and registry |
 | `src/main/java/dev/gdslash/client/config` | Client configuration persistence |
@@ -71,7 +78,7 @@ The pack combines selected Vanilla Tweaks assets with **Motschen's Better Leaves
 
 1. **Core systems:** continue improving module settings, configuration, and lifecycle infrastructure.
 2. **Input system:** add module-specific bindings as gameplay modules are introduced, plus shortcut support and GUI-facing rebinding/conflict controls.
-3. **HUD framework:** draggable elements, positioning, scaling, and visibility.
+3. **HUD framework:** add an in-game editor with dragging, snapping, alignment guides, and live preview.
 4. **Core HUD modules:** coordinates, FPS, keystrokes, armor status, and other useful overlays.
 5. **Gameplay modules:** PvP, movement, rendering, player, and quality-of-life features.
 6. **Resource-pack polish:** verify compatibility and refine bundled-pack behavior.
