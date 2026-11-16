@@ -1,0 +1,100 @@
+name: Extract bundled resource pack
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract-resource-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract uploaded resource pack
+        id: extract
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import shutil
+
+          target = Path("src/main/resources/resourcepacks/client-default")
+          archives = sorted(target.glob("*.zip"))
+          if not archives:
+              print("No uploaded resource-pack ZIP found; nothing to do.")
+              raise SystemExit(0)
+
+          archive = archives[0]
+          staging = target.parent / ".client-default-extract"
+          if staging.exists():
+              shutil.rmtree(staging)
+          staging.mkdir(parents=True)
+
+          with ZipFile(archive) as zf:
+              names = [n for n in zf.namelist() if n and not n.endswith("/")]
+              if not names:
+                  raise SystemExit("The uploaded ZIP is empty.")
+
+              # Strip a single enclosing directory when the pack is nested in one.
+              first_parts = {Path(n).parts[0] for n in names if len(Path(n).parts) > 1}
+              strip_root = None
+              if len(first_parts) == 1 and all(Path(n).parts[0] in first_parts for n in names):
+                  candidate = next(iter(first_parts))
+                  if any(n == candidate + "/pack.mcmeta" or n.startswith(candidate + "/assets/") for n in names):
+                      strip_root = candidate
+
+              for info in zf.infolist():
+                  name = info.filename
+                  if not name or name.endswith("/"):
+                      continue
+                  parts = Path(name).parts
+                  if strip_root:
+                      if not parts or parts[0] != strip_root:
+                          continue
+                      parts = parts[1:]
+                  if not parts or any(p in ("..", "") for p in parts):
+                      raise SystemExit(f"Unsafe ZIP entry: {name}")
+                  destination = staging.joinpath(*parts)
+                  destination.parent.mkdir(parents=True, exist_ok=True)
+                  with zf.open(info) as source, destination.open("wb") as output:
+                      shutil.copyfileobj(source, output)
+
+          if not (staging / "pack.mcmeta").is_file():
+              raise SystemExit("Extraction completed, but pack.mcmeta was not found at the pack root. ZIP retained for inspection.")
+
+          # Replace the placeholder directory contents with the extracted pack.
+          for item in target.iterdir():
+              if item == archive:
+                  continue
+              if item.is_dir():
+                  shutil.rmtree(item)
+              else:
+                  item.unlink()
+          for item in staging.iterdir():
+              shutil.move(str(item), str(target / item.name))
+          staging.rmdir()
+          archive.unlink()
+          print("Resource pack extracted successfully.")
+          PY
+
+      - name: Commit extracted pack
+        shell: bash
+        run: |
+          if [ -f "src/main/resources/resourcepacks/client-default/pack.mcmeta" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A src/main/resources/resourcepacks/client-default
+            if ! git diff --cached --quiet; then
+              git commit -m "Extract bundled client resource pack"
+              git push origin HEAD:main
+            fi
+          fi
