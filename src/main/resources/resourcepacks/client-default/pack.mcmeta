@@ -1,6 +1,13 @@
 {
   "pack": {
-    "pack_format": 1,
-    "description": "The client's default graphics overhaul. Optional. - createtextures.com"
+    "description": "The client's default graphics overhaul. Optional. - createtextures.com",
+    "min_format": [
+      75,
+      0
+    ],
+    "max_format": [
+      75,
+      0
+    ]
   }
 }
